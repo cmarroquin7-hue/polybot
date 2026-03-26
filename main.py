@@ -13,10 +13,10 @@ log=logging.getLogger("polybot")
 def get_client():
     from polymarket_us import PolymarketUS
     key_id=os.getenv("API_KEY_ID","").strip()
-    private_key=os.getenv("PRIVATE_KEY","").strip()
-    if not key_id or not private_key:
-        raise ValueError("API_KEY_ID or PRIVATE_KEY missing")
-    return PolymarketUS(key_id=key_id,private_key=private_key)
+    secret_key=os.getenv("POLYMARKET_SECRET_KEY","").strip()
+    if not key_id or not secret_key:
+        raise ValueError("API_KEY_ID or POLYMARKET_SECRET_KEY missing")
+    return PolymarketUS(key_id=key_id,secret_key=secret_key)
 def fetch_markets():
     try:
         r=requests.get(f"{GAMMA_URL}/markets",params={"active":True,"closed":False,"limit":100},timeout=10)
@@ -48,7 +48,7 @@ def place_trade(client,decision,open_count):
     bet=round(BANKROLL*MAX_BET_PCT,2);shares=round(bet/price,1)
     log.info(f"ORDER: {decision['side']} {shares} shares @ {price:.2f}")
     try:
-        resp=client.place_order(market_id=decision["market_id"],side=decision["side"],price=price,size=shares)
+        resp=client.orders.create({"marketSlug":decision["market_id"],"intent":"ORDER_INTENT_BUY_LONG" if decision["side"]=="YES" else "ORDER_INTENT_BUY_SHORT","price":price,"size":shares})
         log.info(f"Filled: {resp}");return True
     except Exception as e:
         log.error(f"Order failed: {e}");return False

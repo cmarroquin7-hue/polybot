@@ -8,27 +8,15 @@ MIN_EDGE=0.05
 MIN_LIQUIDITY=5000
 FOCUS=["bitcoin","btc","eth","crypto","nba","nfl","mlb","gdp","fed","inflation","recession","rate","cpi","unemployment","nasdaq","sports","championship"]
 GAMMA_URL="https://gamma-api.polymarket.com"
-CLOB_URL="https://clob.polymarket.com"
 logging.basicConfig(level=logging.INFO,format="%(asctime)s [%(levelname)s] %(message)s")
 log=logging.getLogger("polybot")
 def get_client():
-    from py_clob_client.client import ClobClient
-    from py_clob_client.clob_types import ApiCreds
-    pk=os.getenv("PRIVATE_KEY","").strip()
-    if not pk:raise ValueError("PRIVATE_KEY missing")
-    if pk.startswith("0x") or pk.startswith("0X"):pk=pk[2:]
-    client=ClobClient(CLOB_URL,chain_id=137,key=pk)
-    api_key=os.getenv("POLY_API_KEY")
-    if not api_key:
-        log.info("Generating API credentials...")
-        creds=client.create_or_derive_api_key()
-        os.environ["POLY_API_KEY"]=creds["apiKey"]
-        os.environ["POLY_SECRET"]=creds["secret"]
-        os.environ["POLY_PASSPHRASE"]=creds["passphrase"]
-        api_key=creds["apiKey"];secret=creds["secret"];phrase=creds["passphrase"]
-    else:
-        secret=os.getenv("POLY_SECRET");phrase=os.getenv("POLY_PASSPHRASE")
-    return ClobClient(CLOB_URL,chain_id=137,key=pk,creds=ApiCreds(api_key=api_key,api_secret=secret,api_passphrase=phrase))
+    from polymarket_us import PolymarketUS
+    key_id=os.getenv("API_KEY_ID","").strip()
+    private_key=os.getenv("PRIVATE_KEY","").strip()
+    if not key_id or not private_key:
+        raise ValueError("API_KEY_ID or PRIVATE_KEY missing")
+    return PolymarketUS(api_key_id=key_id,private_key=private_key)
 def fetch_markets():
     try:
         r=requests.get(f"{GAMMA_URL}/markets",params={"active":True,"closed":False,"limit":100},timeout=10)
@@ -60,8 +48,7 @@ def place_trade(client,decision,open_count):
     bet=round(BANKROLL*MAX_BET_PCT,2);shares=round(bet/price,1)
     log.info(f"ORDER: {decision['side']} {shares} shares @ {price:.2f}")
     try:
-        from py_clob_client.clob_types import OrderArgs
-        resp=client.create_and_post_order(OrderArgs(price=price,size=shares,side=decision["side"],token_id=decision["market_id"]))
+        resp=client.place_order(market_id=decision["market_id"],side=decision["side"],price=price,size=shares)
         log.info(f"Filled: {resp}");return True
     except Exception as e:
         log.error(f"Order failed: {e}");return False

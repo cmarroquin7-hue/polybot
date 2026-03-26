@@ -16,7 +16,7 @@ def get_client():
     private_key=os.getenv("PRIVATE_KEY","").strip()
     if not key_id or not private_key:
         raise ValueError("API_KEY_ID or PRIVATE_KEY missing")
-    return PolymarketUS(api_key_id=key_id,private_key=private_key)
+    return PolymarketUS(key_id=key_id,private_key=private_key)
 def fetch_markets():
     try:
         r=requests.get(f"{GAMMA_URL}/markets",params={"active":True,"closed":False,"limit":100},timeout=10)

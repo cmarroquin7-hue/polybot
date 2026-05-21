@@ -31,7 +31,7 @@ def ai_analyze(markets):
     client=anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
     summaries=[{"id":m.get("id"),"question":m.get("question"),"yes_price":m.get("bestAsk") or m.get("lastTradePrice"),"volume":m.get("volume")} for m in markets]
     prompt="You are an expert prediction market trader managing $100 on Polymarket.\nFocus: Crypto, Sports, Economics.\nOnly recommend BUY when edge is greater than 5 cents.\nMarkets:\n"+json.dumps(summaries,indent=2)+"\nReply ONLY with a JSON array, no markdown:\n[{\"market_id\":\"...\",\"question\":\"...\",\"action\":\"BUY or SKIP\",\"side\":\"YES or NO\",\"true_prob\":0.00,\"market_price\":0.00,\"edge\":0.00,\"confidence\":\"HIGH or MEDIUM or LOW\",\"reasoning\":\"one sentence\"}]"
-    resp=client.messages.create(model="claude-sonnet-4-20250514",max_tokens=2000,messages=[{"role":"user","content":prompt}])
+    resp=client.messages.create(model="claude-sonnet-4-6",max_tokens=2000,messages=[{"role":"user","content":prompt}])
     raw=resp.content[0].text.strip().replace("```json","").replace("```","")
     try:
         decisions=json.loads(raw)
